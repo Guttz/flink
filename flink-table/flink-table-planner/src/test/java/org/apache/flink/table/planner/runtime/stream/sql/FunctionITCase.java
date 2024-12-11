@@ -161,6 +161,11 @@ public class FunctionITCase extends StreamingTestBase {
     }
 
     @Test
+    void testSelectCurrentTimestamp() throws ExecutionException, InterruptedException {
+        tEnv().executeSql("SELECT * FROM (SELECT CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP)").print();
+    }
+
+    @Test
     void testCreateFunctionCatalogNotExists() {
         String ddl1 =
                 "create function catalog1.database1.f3 as 'org.apache.flink.function.TestFunction'";

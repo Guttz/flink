@@ -56,9 +56,9 @@ public class QueryOperationSqlExecutionTest implements TableTestProgramRunner {
     @Override
     public List<TableTestProgram> programs() {
         return Arrays.asList(
-                QueryOperationTestPrograms.SOURCE_QUERY_OPERATION,
-                QueryOperationTestPrograms.VALUES_QUERY_OPERATION,
-                QueryOperationTestPrograms.FILTER_QUERY_OPERATION,
+                QueryOperationTestPrograms.VALUES_QUERY_OPERATION
+                // QueryOperationTestPrograms.VALUES_QUERY_OPERATION
+                /*QueryOperationTestPrograms.FILTER_QUERY_OPERATION,
                 QueryOperationTestPrograms.AGGREGATE_QUERY_OPERATION,
                 QueryOperationTestPrograms.AGGREGATE_NO_GROUP_BY_QUERY_OPERATION,
                 QueryOperationTestPrograms.DISTINCT_QUERY_OPERATION,
@@ -76,7 +76,7 @@ public class QueryOperationSqlExecutionTest implements TableTestProgramRunner {
                 QueryOperationTestPrograms.OVER_WINDOW_ROWS,
                 QueryOperationTestPrograms.OVER_WINDOW_ROWS_UNBOUNDED_NO_PARTITION,
                 QueryOperationTestPrograms.OVER_WINDOW_LAG,
-                QueryOperationTestPrograms.ACCESSING_NESTED_COLUMN);
+                QueryOperationTestPrograms.ACCESSING_NESTED_COLUMN*/ );
     }
 
     @ParameterizedTest

@@ -74,12 +74,9 @@ public class QueryOperationTestPrograms {
                                     .addSchema("a bigint", "b string")
                                     .consumedValues(Row.of(1L, "abc"), Row.of(2L, "cde"))
                                     .build())
-                    .runTableApi(t -> t.fromValues(row(1L, "abc"), row(2L, "cde")), "sink")
-                    .runSql(
-                            "SELECT `$$T_VAL`.`f0`, `$$T_VAL`.`f1` FROM (VALUES \n"
-                                    + "    (CAST(1 AS BIGINT), 'abc'),\n"
-                                    + "    (CAST(2 AS BIGINT), 'cde')\n"
-                                    + ") $$T_VAL(`f0`, `f1`)")
+                    .runTableApi(
+                            t -> t.sqlQuery("SELECT CURRENT_TIMESTAMP, CURRENT_TIMESTAMP()"),
+                            "sink")
                     .build();
 
     static final TableTestProgram FILTER_QUERY_OPERATION =

@@ -84,7 +84,11 @@ public class FlinkSqlOperatorTable extends ReflectiveSqlOperatorTable {
 
             // register functions based on batch or streaming mode
             final FlinkSqlOperatorTable finalInstance = instance;
-            dynamicFunctions(isBatchMode).forEach(f -> finalInstance.register(f));
+            dynamicFunctions(isBatchMode)
+                    .forEach(
+                            f -> {
+                                finalInstance.register(f);
+                            });
             cachedInstances.put(isBatchMode, finalInstance);
         }
         return instance;
@@ -92,7 +96,7 @@ public class FlinkSqlOperatorTable extends ReflectiveSqlOperatorTable {
 
     public static List<SqlFunction> dynamicFunctions(boolean isBatchMode) {
         return Arrays.asList(
-                new FlinkTimestampDynamicFunction(
+                /*new FlinkTimestampDynamicFunction(
                         SqlStdOperatorTable.LOCALTIME.getName(), SqlTypeName.TIME, isBatchMode),
                 new FlinkTimestampDynamicFunction(
                         SqlStdOperatorTable.CURRENT_TIME.getName(), SqlTypeName.TIME, isBatchMode),
@@ -101,12 +105,27 @@ public class FlinkSqlOperatorTable extends ReflectiveSqlOperatorTable {
                         SqlStdOperatorTable.LOCALTIMESTAMP.getName(),
                         SqlTypeName.TIMESTAMP,
                         isBatchMode,
-                        3),
+                        3),*/
                 new FlinkTimestampWithPrecisionDynamicFunction(
                         SqlStdOperatorTable.CURRENT_TIMESTAMP.getName(),
                         SqlTypeName.TIMESTAMP_WITH_LOCAL_TIME_ZONE,
                         isBatchMode,
-                        3),
+                        3) {
+                    @Override
+                    public SqlSyntax getSyntax() {
+                        return SqlSyntax.FUNCTION;
+                    }
+                },
+                new FlinkTimestampWithPrecisionDynamicFunction(
+                        SqlStdOperatorTable.CURRENT_TIMESTAMP.getName(),
+                        SqlTypeName.TIMESTAMP_WITH_LOCAL_TIME_ZONE,
+                        isBatchMode,
+                        3) {
+                    @Override
+                    public SqlSyntax getSyntax() {
+                        return SqlSyntax.FUNCTION_ID;
+                    }
+                },
                 new FlinkTimestampWithPrecisionDynamicFunction(
                         FlinkTimestampWithPrecisionDynamicFunction.NOW,
                         SqlTypeName.TIMESTAMP_WITH_LOCAL_TIME_ZONE,
@@ -222,6 +241,25 @@ public class FlinkSqlOperatorTable extends ReflectiveSqlOperatorTable {
                     .returnType(ReturnTypes.DOUBLE)
                     .operandTypeChecker(OperandTypes.NILADIC)
                     .build();
+
+    // maybe FlinkTimestampDynamicFunction
+    /*
+    public static final SqlFunction CURRENT_TIMESTAMP_FUNCTION =
+            new SqlAbstractTimeFunction("CURRENT_TIMESTAMP", SqlTypeName.TIMESTAMP) {
+                @Override
+                public SqlSyntax getSyntax() {
+                    return SqlSyntax.FUNCTION;
+                }
+            };
+
+    public static final SqlFunction CURRENT_TIMESTAMP_FUNCTION =
+    BuiltInSqlFunction.newBuilder()
+            .name("CURRENT_TIMESTAMP")
+            // .kind(SCALAR)
+            // .outputTypeStrategy(explicit(TIMESTAMP_LTZ(3).notNull()))
+            .returnType(ReturnTypes.TIMESTAMP_LTZ)
+            .operandTypeChecker(OperandTypes.NILADIC)
+            .build();*/
 
     /** Function for concat strings, it is same with {@link #CONCAT}, but this is a function. */
     public static final SqlFunction CONCAT_FUNCTION =
