@@ -44,6 +44,7 @@ import static org.apache.flink.table.expressions.ApiExpressionUtils.objectToExpr
 import static org.apache.flink.table.expressions.ApiExpressionUtils.unresolvedCall;
 import static org.apache.flink.table.expressions.ApiExpressionUtils.unresolvedRef;
 import static org.apache.flink.table.expressions.ApiExpressionUtils.valueLiteral;
+import static org.apache.flink.table.functions.BuiltInFunctionDefinitions.JSON;
 import static org.apache.flink.table.functions.BuiltInFunctionDefinitions.JSON_ARRAY;
 import static org.apache.flink.table.functions.BuiltInFunctionDefinitions.JSON_ARRAYAGG_ABSENT_ON_NULL;
 import static org.apache.flink.table.functions.BuiltInFunctionDefinitions.JSON_ARRAYAGG_NULL_ON_NULL;
@@ -871,6 +872,29 @@ public final class Expressions {
                 Stream.concat(Stream.of(onNull), Arrays.stream(keyValues)).toArray(Object[]::new);
 
         return apiCall(JSON_OBJECT, arguments);
+    }
+
+  /**
+   * Expects a JSON string and returns its values as-is without escaping it as a string.
+   *
+   * <p>This function can currently only be used within the {@code JSON_OBJECT} function. It
+   * allows passing pre-formatted JSON strings that will be inserted directly into the resulting
+   * JSON structure rather than being escaped as a string value. This allows storing nested JSON
+   * structures in a JSON_OBJECT without processing them as strings. If the value is null or empty,
+   * the function returns {@code null}.
+   *
+   * <p>Examples:
+   *
+   * <pre>{@code
+   * // {"nested":{"value":42}}
+   * jsonObject(JsonOnNull.NULL, "nested", json("{\"value\": 42}"))
+   *
+   * // Invalid - JSON function can only be used within JSON_OBJECT
+   * json("{\"value\": 42}")
+   * }</pre>
+   */
+  public static ApiExpression json(Object value) {
+        return apiCallAtLeastOneArgument(JSON, value);
     }
 
     /**
