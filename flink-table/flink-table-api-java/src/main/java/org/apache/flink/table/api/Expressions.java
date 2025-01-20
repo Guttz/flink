@@ -862,9 +862,13 @@ public final class Expressions {
      * jsonObject(JsonOnNull.ABSENT, "K1", nullOf(DataTypes.STRING())) // "{}"
      *
      * // {"K1":{"K2":"V"}}
+     * jsonObject(JsonOnNull.NULL, "K1", json('{"K2":"V"}'))
+     *
+     * // {"K1":{"K2":"V"}}
      * jsonObject(JsonOnNull.NULL, "K1", jsonObject(JsonOnNull.NULL, "K2", "V"))
      * }</pre>
      *
+     * @see #json(Object)
      * @see #jsonArray(JsonOnNull, Object...)
      */
     public static ApiExpression jsonObject(JsonOnNull onNull, Object... keyValues) {
@@ -874,26 +878,32 @@ public final class Expressions {
         return apiCall(JSON_OBJECT, arguments);
     }
 
-  /**
-   * Expects a JSON string and returns its values as-is without escaping it as a string.
-   *
-   * <p>This function can currently only be used within the {@code JSON_OBJECT} function. It
-   * allows passing pre-formatted JSON strings that will be inserted directly into the resulting
-   * JSON structure rather than being escaped as a string value. This allows storing nested JSON
-   * structures in a JSON_OBJECT without processing them as strings. If the value is null or empty,
-   * the function returns {@code null}.
-   *
-   * <p>Examples:
-   *
-   * <pre>{@code
-   * // {"nested":{"value":42}}
-   * jsonObject(JsonOnNull.NULL, "nested", json("{\"value\": 42}"))
-   *
-   * // Invalid - JSON function can only be used within JSON_OBJECT
-   * json("{\"value\": 42}")
-   * }</pre>
-   */
-  public static ApiExpression json(Object value) {
+    /**
+     * Expects a JSON string and returns its values as-is without escaping it as a string.
+     *
+     * <p>This function can currently only be used within the {@code JSON_OBJECT} function. It
+     * allows passing pre-formatted JSON strings that will be inserted directly into the resulting
+     * JSON structure rather than being escaped as a string value. This allows storing nested JSON
+     * structures in a JSON_OBJECT without processing them as strings. If the value is null or
+     * empty, the function returns {@code null}.
+     *
+     * <p>Examples:
+     *
+     * <pre>{@code
+     * // {"K":{"K2":42}}
+     * jsonObject(JsonOnNull.NULL, "K", json('{"K2": 42}'))
+     *
+     * // {"K":{"K2":{"K3":42}}}
+     * jsonObject(JsonOnNull.NULL, "K", json('{"K2":{"K3":42}}'))
+     *
+     * // {"K": null}
+     * jsonObject(JsonOnNull.NULL, "K", json(''))
+     *
+     * // Invalid - JSON function can only be used within JSON_OBJECT
+     * json("{\"value\": 42}")
+     * }</pre>
+     */
+    public static ApiExpression json(Object value) {
         return apiCallAtLeastOneArgument(JSON, value);
     }
 

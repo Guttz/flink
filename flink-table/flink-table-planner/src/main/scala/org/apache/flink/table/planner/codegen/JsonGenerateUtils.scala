@@ -55,7 +55,7 @@ object JsonGenerateUtils {
     if (isJsonObjectOrArrayOperand(operand)) {
       createRawNodeTerm(expression)
     } else if (isJsonFunctionOperand(operand)) {
-      createRawSingleStringInputTerm(expression)
+      createRawOrNullNodeTerm(expression)
     } else {
       createNodeTerm(ctx, expression)
     }
@@ -165,8 +165,16 @@ object JsonGenerateUtils {
        |""".stripMargin
   }
 
-  /** Returns a term which wraps the given input parameter as a raw value. */
-  private def createRawSingleStringInputTerm(valueExpr: GeneratedExpression): String = {
+  /**
+   * Returns a term which wraps the given `valueExpr` as a raw [[JsonNode]]. If string value of it
+   * is empty, it returns null.
+   *
+   * @param valueExpr
+   *   Generated expression of the value which should be wrapped.
+   * @return
+   *   Generate code fragment creating the raw node.
+   */
+  private def createRawOrNullNodeTerm(valueExpr: GeneratedExpression): String = {
     s"""
        |
        |$jsonUtils.getNodeFactory().rawValueNode(
