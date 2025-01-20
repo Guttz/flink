@@ -62,6 +62,7 @@ import static org.apache.flink.table.api.DataTypes.TIMESTAMP_WITH_LOCAL_TIME_ZON
 import static org.apache.flink.table.api.DataTypes.VARBINARY;
 import static org.apache.flink.table.api.Expressions.$;
 import static org.apache.flink.table.api.Expressions.call;
+import static org.apache.flink.table.api.Expressions.json;
 import static org.apache.flink.table.api.Expressions.jsonArray;
 import static org.apache.flink.table.api.Expressions.jsonObject;
 import static org.apache.flink.table.api.Expressions.jsonString;
@@ -87,6 +88,7 @@ class JsonFunctionsITCase extends BuiltInFunctionTestBase {
         testCases.addAll(jsonQuerySpec());
         testCases.addAll(jsonStringSpec());
         testCases.addAll(jsonObjectSpec());
+        testCases.addAll(jsonSpec());
         testCases.addAll(jsonArraySpec());
         testCases.addAll(jsonQuoteSpec());
         testCases.addAll(jsonUnquoteSpecWithValidInput());
@@ -689,6 +691,94 @@ class JsonFunctionsITCase extends BuiltInFunctionTestBase {
                                 "JSON_STRING(f13)",
                                 "{\"f0\":[{\"f0\":1,\"f1\":2}]}",
                                 STRING().notNull()));
+    }
+
+    // Test with alias?? using str$1
+    private static List<TestSetSpec> jsonSpec() {
+        return Arrays.asList(
+                TestSetSpec.forFunction(BuiltInFunctionDefinitions.JSON_OBJECT)
+                        .onFieldsWithData("{\"key\":\"value\"}", "{\"key\": {\"value\": 42}}")
+                        .andDataTypes(STRING(), STRING())
+                        .testSqlResult(
+                                "JSON_OBJECT(KEY 'K' VALUE 'V')",
+                                "{\"K\":\"V\"}",
+                                STRING().notNull())
+                        .testSqlResult(
+                                "JSON_OBJECT(KEY 'K' VALUE JSON_OBJECT(KEY 'some existing json' VALUE 'here'))",
+                                "{\"K\":{\"some existing json\":\"here\"}}",
+                                STRING().notNull())
+                        .testResult(
+                                jsonObject(JsonOnNull.NULL, "K", json("{}")),
+                                "JSON_OBJECT(KEY 'K' VALUE JSON('{}'))",
+                                "{\"K\":{}}",
+                                STRING().notNull())
+                        .testResult(
+                                jsonObject(JsonOnNull.NULL, "K", json($("f0"))),
+                                "JSON_OBJECT(KEY 'K' VALUE JSON(f0))",
+                                "{\"K\":{\"key\":\"value\"}}",
+                                STRING().notNull())
+                        .testResult(
+                                jsonObject(JsonOnNull.NULL, "K", json($("f1"))),
+                                "JSON_OBJECT(KEY 'K' VALUE JSON(f1))",
+                                "{\"K\":{\"key\": {\"value\": 42}}}",
+                                STRING().notNull())
+                        .testResult(
+                                jsonObject(JsonOnNull.NULL, "K", json("[1,2,3]")),
+                                "JSON_OBJECT(KEY 'K' VALUE JSON('[1,2,3]'))",
+                                "{\"K\":[1,2,3]}",
+                                STRING().notNull())
+                        .testResult(
+                                jsonObject(JsonOnNull.NULL, "K", json("")),
+                                "JSON_OBJECT(KEY 'K' VALUE JSON(''))",
+                                "{\"K\":null}",
+                                STRING().notNull())
+                        .testResult(
+                                jsonObject(JsonOnNull.NULL, "K", json(nullOf(STRING()))),
+                                "JSON_OBJECT(KEY 'K' VALUE JSON(CAST(NULL AS STRING)) NULL ON NULL)",
+                                "{\"K\":null}",
+                                STRING().notNull())
+                        .testResult(
+                                jsonObject(JsonOnNull.ABSENT, "K", json(nullOf(STRING()))),
+                                "JSON_OBJECT(KEY 'K' VALUE JSON(CAST(NULL AS STRING)) ABSENT ON NULL)",
+                                "{}",
+                                STRING().notNull())
+                        .testResult(
+                                jsonObject(
+                                        JsonOnNull.NULL,
+                                        "key",
+                                        jsonObject(JsonOnNull.NULL, "nested_key", json($("f1")))),
+                                "JSON_OBJECT("
+                                        + "     KEY 'key'"
+                                        + "     VALUE JSON_OBJECT("
+                                        + "         KEY 'nested_key'"
+                                        + "         VALUE JSON(f1)"
+                                        + ") NULL ON NULL)",
+                                "{\"key\":{\"nested_key\":{\"key\": {\"value\": 42}}}}",
+                                STRING().notNull())
+                        .testResult(
+                                jsonObject(
+                                        JsonOnNull.NULL,
+                                        "key",
+                                        jsonObject(
+                                                JsonOnNull.NULL,
+                                                "nested_key",
+                                                json(nullOf(STRING())))),
+                                "JSON_OBJECT("
+                                        + "     KEY 'key'"
+                                        + "     VALUE JSON_OBJECT("
+                                        + "         KEY 'nested_key'"
+                                        + "         VALUE JSON(CAST(NULL AS STRING))"
+                                        + ") NULL ON NULL)",
+                                "{\"key\":{\"nested_key\":null}}",
+                                STRING().notNull())
+                        .testSqlRuntimeError(
+                                "JSON(f0)",
+                                TableRuntimeException.class,
+                                "The JSON function is currently only supported inside a JSON_OBJECT.")
+                        .testTableApiRuntimeError(
+                                json($("f0")),
+                                TableRuntimeException.class,
+                                "The JSON function is currently only supported inside a JSON_OBJECT."));
     }
 
     private static List<TestSetSpec> jsonObjectSpec() {
