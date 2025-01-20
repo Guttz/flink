@@ -1098,4 +1098,16 @@ object CodeGenUtils {
         GenerateUtils.generateFieldAccess(ctx, inputType, inputTerm, index)
     }
   }
+
+  def removeFunctionCall(code: String, functionPath: String, functionName: String): String = {
+    // Escape special chars
+    val sanitizedPrefix = java.util.regex.Pattern.quote(functionPath)
+    val sanitizedSuffix = java.util.regex.Pattern.quote(functionName)
+
+    // Regex: Prefix, followed by any characters, followed by the suffix
+    // (?s) enables DOTALL mode, which makes the dot (.) match any character, including a newline
+    val regexPattern = s"(?s)$sanitizedPrefix.*?$sanitizedSuffix".r
+
+    regexPattern.replaceAllIn(code, "")
+  }
 }

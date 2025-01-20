@@ -58,4 +58,70 @@ class CodeGenUtilsTest {
     assertEquals(ArrayBuffer("name$7", "id$7"), CodeGenUtils.newNames(context4, "name", "id"))
     assertEquals(ArrayBuffer("name$8", "id$8"), CodeGenUtils.newNames(context4, "name", "id"))
   }
+
+  @Test
+  def testRemoveFunctionCall(): Unit = {
+    // Simple case
+    val code1 = "x = path.to.function$1asd2s3.eval(\"a\");"
+    val result1 = CodeGenUtils.removeFunctionCall(code1, "path.to.function", "eval")
+    assertEquals("x = (\"a\");", result1)
+
+    // Across new lines
+    val code2 = "x = path.to.function$example\n.eval(\"a\");"
+    val result2 = CodeGenUtils.removeFunctionCall(code2, "path.to.function", "eval")
+    assertEquals("x = (\"a\");", result2)
+
+    // Multiple instances
+    val code3 =
+      "x = path.to.function$example.eval(\"a\"); y = path.to.function$example.eval(\"b\");"
+    val result3 = CodeGenUtils.removeFunctionCall(code3, "path.to.function", "eval")
+    assertEquals("x = (\"a\"); y = (\"b\");", result3)
+
+    // No match
+    val code4 = "x = another.path.function$example.eval(\"a\");"
+    val result4 = CodeGenUtils.removeFunctionCall(code4, "path.to.function", "eval")
+    assertEquals("x = another.path.function$example.eval(\"a\");", result4)
+
+    // Complex spacing
+    val code5 = "x = path.to.function$example    .eval(  \"a\"  );"
+    val result5 = CodeGenUtils.removeFunctionCall(code5, "path.to.function", "eval")
+    assertEquals("x = (  \"a\"  );", result5)
+
+    // Spaces and line break
+    val code6 = "x = path.to.function$3sa56 .  \n eval(\"a\");"
+    val result6 = CodeGenUtils.removeFunctionCall(code6, "path.to.function", "eval")
+    assertEquals("x = (\"a\");", result6)
+
+    // Nested function call
+    val code7 = "x = path.to.function$example.eval(path.to.function$example.eval(\"nested\"));"
+    val result7 = CodeGenUtils.removeFunctionCall(code7, "path.to.function", "eval")
+    assertEquals("x = ((\"nested\"));", result7)
+
+    // Random characters in the identifier
+    val code8 = "x = path.to.function$1xYz.eval(\"a\");"
+    val result8 = CodeGenUtils.removeFunctionCall(code8, "path.to.function", "eval")
+    assertEquals("x = (\"a\");", result8)
+
+    // Similar prefix not affected
+    val code9 =
+      "x = path.to.someOtherFunction$example.eval(\"a\"); y = path.to.function$example.eval(\"b\");"
+    val result9 = CodeGenUtils.removeFunctionCall(code9, "path.to.function", "eval")
+    assertEquals("x = path.to.someOtherFunction$example.eval(\"a\"); y = (\"b\");", result9)
+
+    // Real example
+    val code10 =
+      """
+        |externalResult$2 = (org.apache.flink.table.data.binary.BinaryStringData) function_org$apache$flink$table$runtime$functions$scalar$JsonFunction$87c518437c467d37982c78d63e079865
+        |          .eval("multiple
+        |lines
+        |with
+        |spacing");
+        |""".stripMargin
+    val result10 = CodeGenUtils.removeFunctionCall(
+      code10,
+      "(org.apache.flink.table.data.binary.BinaryStringData) function_org$apache$flink$table$runtime$functions$scalar$JsonFunction",
+      "eval")
+    assertEquals("\nexternalResult$2 = (\"multiple\nlines\nwith\nspacing\");\n", result10)
+
+  }
 }
