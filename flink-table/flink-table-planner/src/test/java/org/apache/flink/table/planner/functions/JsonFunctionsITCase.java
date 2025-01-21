@@ -771,6 +771,9 @@ class JsonFunctionsITCase extends BuiltInFunctionTestBase {
                                         + ") NULL ON NULL)",
                                 "{\"key\":{\"nested_key\":null}}",
                                 STRING().notNull())
+                        .testSqlValidationError(
+                                "JSON()",
+                                "SQL validation failed. From line 1, column 8 to line 1, column 13: No match found for function signature JSON().")
                         .testSqlRuntimeError(
                                 "JSON(f0)",
                                 TableRuntimeException.class,

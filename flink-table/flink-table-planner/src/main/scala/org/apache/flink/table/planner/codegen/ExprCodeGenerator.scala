@@ -29,6 +29,7 @@ import org.apache.flink.table.planner.calcite.{FlinkTypeFactory, RexDistinctKeyV
 import org.apache.flink.table.planner.codegen.CodeGenUtils._
 import org.apache.flink.table.planner.codegen.GeneratedExpression.{NEVER_NULL, NO_CODE}
 import org.apache.flink.table.planner.codegen.GenerateUtils._
+import org.apache.flink.table.planner.codegen.JsonGenerateUtils.{isJsonFunctionOperand, isJsonObjectOrArrayOperand}
 import org.apache.flink.table.planner.codegen.calls._
 import org.apache.flink.table.planner.codegen.calls.ScalarOperatorGens._
 import org.apache.flink.table.planner.codegen.calls.SearchOperatorGen.generateSearch
@@ -475,6 +476,12 @@ class ExprCodeGenerator(ctx: CodeGeneratorContext, nullableInput: Boolean)
           if operandLiteral.getType.getSqlTypeName == SqlTypeName.NULL &&
             call.getOperator.getReturnTypeInference == ReturnTypes.ARG0 =>
         generateNullLiteral(resultType)
+
+      // Special handling for JSON function operands within JSON_OBJECT
+      case (operand: RexNode, _)
+          if isJsonObjectOrArrayOperand(call) && isJsonFunctionOperand(operand) =>
+        val stringArg = operand.asInstanceOf[RexCall].getOperands.get(0)
+        stringArg.accept(this)
 
       case (o @ _, _) => o.accept(this)
     }

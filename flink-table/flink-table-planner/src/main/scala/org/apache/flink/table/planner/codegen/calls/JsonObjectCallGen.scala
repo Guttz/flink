@@ -80,7 +80,7 @@ class JsonObjectCallGen(call: RexCall) extends CallGenerator {
 
     val resultTerm = newName(ctx, "result")
     val resultTermType = primitiveTypeTermForType(returnType)
-    val operandsCode = operandsCodeGen(call, operands)
+    val operandsCode = operands.map(_.code).mkString
     val resultCode = s"""
                         |$operandsCode
                         |
@@ -92,30 +92,5 @@ class JsonObjectCallGen(call: RexCall) extends CallGenerator {
                         |""".stripMargin
 
     GeneratedExpression(resultTerm, "false", resultCode, returnType)
-  }
-
-  private def operandsCodeGen(call: RexCall, operands: Seq[GeneratedExpression]): String = {
-    var operandsCode = operands.map(_.code).mkString
-    if (operands.length < 2) {
-      return operandsCode // Empty JSON_OBJECT() call
-    }
-
-    /* We remove the eval call since the JSON type isn't implemented yet.
-     Instead, we just pass down the input value directly.
-      Thus, users can store the already existing JSON values using JSON_OBJECT.
-     */
-    val valueParamOperand = call.operands.get(2)
-    if (isJsonFunctionOperand(valueParamOperand)) {
-      operandsCode = removeEvalCall(operandsCode)
-    }
-
-    operandsCode
-  }
-
-  private def removeEvalCall(code: String): String = {
-    removeFunctionCall(
-      code,
-      "function_org$apache$flink$table$runtime$functions$scalar$JsonFunction",
-      "eval")
   }
 }
