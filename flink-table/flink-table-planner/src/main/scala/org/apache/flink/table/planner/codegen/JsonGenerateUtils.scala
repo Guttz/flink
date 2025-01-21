@@ -314,5 +314,4 @@ object JsonGenerateUtils {
     ctx.addReusableMember(methodCode)
     methodName
   }
-
 }

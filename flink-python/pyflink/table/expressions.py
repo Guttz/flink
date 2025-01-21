@@ -30,10 +30,10 @@ __all__ = ['if_then_else', 'lit', 'col', 'range_', 'and_', 'or_', 'not_', 'UNBOU
            'current_watermark', 'local_time', 'local_timestamp',
            'temporal_overlaps', 'date_format', 'timestamp_diff', 'array', 'row', 'map_',
            'row_interval', 'pi', 'e', 'rand', 'rand_integer', 'atan2', 'negative', 'concat',
-           'concat_ws', 'uuid', 'null_of', 'log', 'with_columns', 'without_columns', 'json', 'json_string',
-           'json_object', 'json_object_agg', 'json_array', 'json_array_agg', 'call', 'call_sql',
-           'source_watermark', 'to_timestamp_ltz', 'from_unixtime', 'to_date', 'to_timestamp',
-           'convert_tz', 'unix_timestamp']
+           'concat_ws', 'uuid', 'null_of', 'log', 'with_columns', 'without_columns', 'json',
+           'json_string', 'json_object', 'json_object_agg', 'json_array', 'json_array_agg',
+           'call', 'call_sql', 'source_watermark', 'to_timestamp_ltz', 'from_unixtime', 'to_date',
+           'to_timestamp', 'convert_tz', 'unix_timestamp']
 
 
 def _leaf_op(op_name: str) -> Expression:
@@ -772,7 +772,7 @@ def without_columns(head, *tails) -> Expression:
 
 def json(value) -> Expression:
     """
-    Expects a JSON string and returns its values as-is without escaping it as a string.
+    Expects a raw, pre-formatted JSON string and returns its values as-is without escaping it as a string.
 
     This function can currently only be used within the `JSON_OBJECT` function. It allows passing
     pre-formatted JSON strings that will be inserted directly into the resulting JSON structure
