@@ -179,7 +179,7 @@ object JsonGenerateUtils {
        |
        |$jsonUtils.getNodeFactory().rawValueNode(
        |    new ${typeTerm(classOf[RawValue])}(
-       |        ${valueExpr.resultTerm} != null && ${valueExpr.resultTerm}.toString().equals("") ?
+       |        !${valueExpr.nullTerm} && ${valueExpr.resultTerm}.toString().equals("") ?
        |            null : ${valueExpr.resultTerm}.toString()))
        |""".stripMargin
   }
