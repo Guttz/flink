@@ -772,7 +772,8 @@ def without_columns(head, *tails) -> Expression:
 
 def json(value) -> Expression:
     """
-    Expects a raw, pre-formatted JSON string and returns its values as-is without escaping it as a string.
+    Expects a raw, pre-formatted JSON string and returns its values as-is without escaping
+    it as a string.
 
     This function can currently only be used within the `JSON_OBJECT` function. It allows passing
     pre-formatted JSON strings that will be inserted directly into the resulting JSON structure

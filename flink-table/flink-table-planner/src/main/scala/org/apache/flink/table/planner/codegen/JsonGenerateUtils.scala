@@ -52,10 +52,8 @@ object JsonGenerateUtils {
       ctx: CodeGeneratorContext,
       expression: GeneratedExpression,
       operand: RexNode): String = {
-    if (isJsonObjectOrArrayOperand(operand)) {
+    if (isJsonObjectOrArrayOperand(operand) || isJsonFunctionOperand(operand)) {
       createRawNodeTerm(expression)
-    } else if (isJsonFunctionOperand(operand)) {
-      createRawOrNullNodeTerm(expression)
     } else {
       createNodeTerm(ctx, expression)
     }
@@ -162,25 +160,6 @@ object JsonGenerateUtils {
     s"""
        |$jsonUtils.getNodeFactory().rawValueNode(
        |    new ${typeTerm(classOf[RawValue])}(${valueExpr.resultTerm}.toString()))
-       |""".stripMargin
-  }
-
-  /**
-   * Returns a term which wraps the given `valueExpr` as a raw [[JsonNode]]. If string value of it
-   * is empty, it returns null.
-   *
-   * @param valueExpr
-   *   Generated expression of the value which should be wrapped.
-   * @return
-   *   Generate code fragment creating the raw node.
-   */
-  private def createRawOrNullNodeTerm(valueExpr: GeneratedExpression): String = {
-    s"""
-       |
-       |$jsonUtils.getNodeFactory().rawValueNode(
-       |    new ${typeTerm(classOf[RawValue])}(
-       |        !${valueExpr.nullTerm} && ${valueExpr.resultTerm}.toString().equals("") ?
-       |            null : ${valueExpr.resultTerm}.toString()))
        |""".stripMargin
   }
 

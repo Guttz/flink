@@ -34,6 +34,7 @@ public class JsonFunction extends BuiltInScalarFunction {
 
     public @Nullable Object eval(Object input) {
         throw new TableRuntimeException(
-                "The JSON function is currently only supported inside a JSON_OBJECT.");
+                "The JSON function is currently only supported inside a JSON_OBJECT."
+                        + "` Example: JSON_OBJECT('a', JSON('{\"key\": \"value\"}'))");
     }
 }
