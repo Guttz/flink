@@ -369,6 +369,19 @@ class UnnestITCase(mode: StateBackendMode) extends StreamingWithStateTestBase(mo
   }
 
   @TestTemplate
+  def testUnnestWithOrdinality(): Unit = {
+    val sqlQuery =
+      "SELECT number, ordinality FROM UNNEST(ARRAY[1, 2, 3, 4]) WITH ORDINALITY AS t(number, ordinality);"
+    val result = tEnv.sqlQuery(sqlQuery).toDataStream
+    val sink = new TestingAppendSink
+    result.addSink(sink)
+    env.execute()
+
+    val expected = List("1,1", "2,2", "3,3", "4,4")
+    assertThat(sink.getAppendResults.sorted).isEqualTo(expected.sorted)
+  }
+
+  @TestTemplate
   def testUnnestWithValuesStream2(): Unit = {
     val sqlQuery = "SELECT * FROM (VALUES('a')) CROSS JOIN UNNEST(ARRAY[1, 2, 3])"
     val result = tEnv.sqlQuery(sqlQuery).toDataStream
