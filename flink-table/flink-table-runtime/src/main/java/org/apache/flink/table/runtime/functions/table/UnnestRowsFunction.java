@@ -48,43 +48,75 @@ public class UnnestRowsFunction extends BuiltInSpecializedFunction {
     public UserDefinedFunction specialize(SpecializedContext context) {
         final LogicalType argType =
                 context.getCallContext().getArgumentDataTypes().get(0).getLogicalType();
+        //final boolean withOrdinality = context.getCallContext().isWithOrdinality();
+        final boolean withOrdinality = true;
         switch (argType.getTypeRoot()) {
             case ARRAY:
                 final ArrayType arrayType = (ArrayType) argType;
                 return new CollectionUnnestTableFunction(
                         context,
                         arrayType.getElementType(),
-                        ArrayData.createElementGetter(arrayType.getElementType()));
+                        ArrayData.createElementGetter(arrayType.getElementType()),
+                        withOrdinality);
             case MULTISET:
                 final MultisetType multisetType = (MultisetType) argType;
                 return new CollectionUnnestTableFunction(
                         context,
                         multisetType.getElementType(),
-                        ArrayData.createElementGetter(multisetType.getElementType()));
+                        ArrayData.createElementGetter(multisetType.getElementType()),
+                        withOrdinality);
             case MAP:
                 final MapType mapType = (MapType) argType;
                 return new MapUnnestTableFunction(
                         context,
                         RowType.of(false, mapType.getKeyType(), mapType.getValueType()),
                         ArrayData.createElementGetter(mapType.getKeyType()),
-                        ArrayData.createElementGetter(mapType.getValueType()));
+                        ArrayData.createElementGetter(mapType.getValueType()),
+                        withOrdinality);
             default:
                 throw new UnsupportedOperationException("Unsupported type for UNNEST: " + argType);
         }
     }
 
-    public static LogicalType getUnnestedType(LogicalType logicalType) {
+    public static LogicalType getUnnestedType(LogicalType logicalType, boolean withOrdinality) {
+        LogicalType baseType;
         switch (logicalType.getTypeRoot()) {
             case ARRAY:
-                return ((ArrayType) logicalType).getElementType();
+                baseType = ((ArrayType) logicalType).getElementType();
+                break;
             case MULTISET:
-                return ((MultisetType) logicalType).getElementType();
+                baseType = ((MultisetType) logicalType).getElementType();
+                break;
             case MAP:
                 final MapType mapType = (MapType) logicalType;
-                return RowType.of(false, mapType.getKeyType(), mapType.getValueType());
+                baseType = RowType.of(false, mapType.getKeyType(), mapType.getValueType());
+                break;
             default:
                 throw new UnsupportedOperationException("Unsupported UNNEST type: " + logicalType);
         }
+
+        if (withOrdinality) {
+            if (baseType instanceof RowType) {
+                // For row types, add the ordinal field
+                RowType rowType = (RowType) baseType;
+                LogicalType[] fieldTypes = new LogicalType[rowType.getFieldCount() + 1];
+                String[] fieldNames = new String[rowType.getFieldCount() + 1];
+                for (int i = 0; i < rowType.getFieldCount(); i++) {
+                    fieldTypes[i] = rowType.getTypeAt(i);
+                    fieldNames[i] = rowType.getFieldNames().get(i);
+                }
+                fieldTypes[rowType.getFieldCount()] = DataTypes.INT().notNull().getLogicalType();
+                fieldNames[rowType.getFieldCount()] = "ordinality";
+                return RowType.of(false, fieldTypes, fieldNames);
+            } else {
+                // For non-row types, wrap in a row with the original type and ordinal field
+                return RowType.of(
+                    false,
+                    new LogicalType[]{baseType, DataTypes.INT().notNull().getLogicalType()},
+                    new String[]{"f0", "ordinality"});
+            }
+        }
+        return baseType;
     }
 
     // --------------------------------------------------------------------------------------------
@@ -92,19 +124,44 @@ public class UnnestRowsFunction extends BuiltInSpecializedFunction {
     // --------------------------------------------------------------------------------------------
 
     private abstract static class UnnestTableFunctionBase extends BuiltInTableFunction<Object> {
-
         private final transient DataType outputDataType;
+        protected final boolean withOrdinality;
 
-        UnnestTableFunctionBase(SpecializedContext context, LogicalType outputType) {
+        UnnestTableFunctionBase(SpecializedContext context, LogicalType outputType, boolean withOrdinality) {
             super(BuiltInFunctionDefinitions.INTERNAL_UNNEST_ROWS, context);
+            this.withOrdinality = withOrdinality;
             // The output type in the context is already wrapped, however, the result of the
             // function is not. Therefore, we need a custom output type.
-            outputDataType = DataTypes.of(outputType).toInternal();
+            if (withOrdinality){
+                outputDataType = DataTypes.ROW(
+                        DataTypes.FIELD("f0", DataTypes.of(outputType).notNull()),
+                        DataTypes.FIELD("ordinality", DataTypes.INT().notNull())
+                ).toInternal();
+            } else {
+                outputDataType = DataTypes.of(outputType).toInternal();
+            }
         }
 
         @Override
         public DataType getOutputDataType() {
             return outputDataType;
+        }
+
+        protected Object wrapWithOrdinality(Object value, int ordinal) {
+            if (!withOrdinality) {
+                return value;
+            }
+            if (value instanceof GenericRowData) {
+                GenericRowData row = (GenericRowData) value;
+                Object[] newFields = new Object[row.getArity() + 1];
+                for (int i = 0; i < row.getArity(); i++) {
+                    newFields[i] = row.getField(i);
+                }
+                newFields[row.getArity()] = ordinal;
+                return GenericRowData.of(newFields);
+            } else {
+                return GenericRowData.of(value, ordinal);
+            }
         }
     }
 
@@ -118,8 +175,9 @@ public class UnnestRowsFunction extends BuiltInSpecializedFunction {
         public CollectionUnnestTableFunction(
                 SpecializedContext context,
                 LogicalType outputType,
-                ArrayData.ElementGetter elementGetter) {
-            super(context, outputType);
+                ArrayData.ElementGetter elementGetter,
+                boolean withOrdinality) {
+            super(context, outputType, withOrdinality);
             this.elementGetter = elementGetter;
         }
 
@@ -129,7 +187,7 @@ public class UnnestRowsFunction extends BuiltInSpecializedFunction {
             }
             final int size = arrayData.size();
             for (int pos = 0; pos < size; pos++) {
-                collect(elementGetter.getElementOrNull(arrayData, pos));
+                collect(wrapWithOrdinality(elementGetter.getElementOrNull(arrayData, pos), pos + 1));
             }
         }
 
@@ -140,11 +198,12 @@ public class UnnestRowsFunction extends BuiltInSpecializedFunction {
             final int size = mapData.size();
             final ArrayData keys = mapData.keyArray();
             final ArrayData values = mapData.valueArray();
+            int ordinal = 1;
             for (int pos = 0; pos < size; pos++) {
                 final int multiplier = values.getInt(pos);
                 final Object key = elementGetter.getElementOrNull(keys, pos);
                 for (int i = 0; i < multiplier; i++) {
-                    collect(key);
+                    collect(wrapWithOrdinality(key, ordinal++));
                 }
             }
         }
@@ -156,15 +215,15 @@ public class UnnestRowsFunction extends BuiltInSpecializedFunction {
         private static final long serialVersionUID = 1L;
 
         private final ArrayData.ElementGetter keyGetter;
-
         private final ArrayData.ElementGetter valueGetter;
 
         public MapUnnestTableFunction(
                 SpecializedContext context,
                 LogicalType outputType,
                 ArrayData.ElementGetter keyGetter,
-                ArrayData.ElementGetter valueGetter) {
-            super(context, outputType);
+                ArrayData.ElementGetter valueGetter,
+                boolean withOrdinality) {
+            super(context, outputType, withOrdinality);
             this.keyGetter = keyGetter;
             this.valueGetter = valueGetter;
         }
@@ -178,9 +237,11 @@ public class UnnestRowsFunction extends BuiltInSpecializedFunction {
             final ArrayData valueArray = mapData.valueArray();
             for (int i = 0; i < size; i++) {
                 collect(
-                        GenericRowData.of(
-                                keyGetter.getElementOrNull(keyArray, i),
-                                valueGetter.getElementOrNull(valueArray, i)));
+                        wrapWithOrdinality(
+                                GenericRowData.of(
+                                        keyGetter.getElementOrNull(keyArray, i),
+                                        valueGetter.getElementOrNull(valueArray, i)),
+                                i + 1));
             }
         }
     }

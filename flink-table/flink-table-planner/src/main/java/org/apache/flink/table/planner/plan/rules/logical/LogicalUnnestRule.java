@@ -68,12 +68,12 @@ public class LogicalUnnestRule extends RelRule<LogicalUnnestRule.LogicalUnnestRu
             LogicalFilter logicalFilter = (LogicalFilter) right;
             RelNode relNode = getRel(logicalFilter.getInput());
             if (relNode instanceof Uncollect) {
-                return !((Uncollect) relNode).withOrdinality;
+                return true;
             } else if (relNode instanceof LogicalProject) {
                 LogicalProject logicalProject = (LogicalProject) relNode;
                 relNode = getRel(logicalProject.getInput());
                 if (relNode instanceof Uncollect) {
-                    return !((Uncollect) relNode).withOrdinality;
+                    return true;
                 }
                 return false;
             }
@@ -81,13 +81,11 @@ public class LogicalUnnestRule extends RelRule<LogicalUnnestRule.LogicalUnnestRu
             LogicalProject logicalProject = (LogicalProject) right;
             RelNode relNode = getRel(logicalProject.getInput());
             if (relNode instanceof Uncollect) {
-                Uncollect uncollect = (Uncollect) relNode;
-                return !uncollect.withOrdinality;
+                return true;
             }
             return false;
         } else if (right instanceof Uncollect) {
-            Uncollect uncollect = (Uncollect) right;
-            return !uncollect.withOrdinality;
+            return true;
         }
         return false;
     }
@@ -140,7 +138,8 @@ public class LogicalUnnestRule extends RelRule<LogicalUnnestRule.LogicalUnnestRu
                                     typeFactory.createFieldTypeFromLogicalType(
                                             toRowType(
                                                     UnnestRowsFunction.getUnnestedType(
-                                                            logicalType))),
+                                                            logicalType,
+                                                            uncollect.withOrdinality))),
                                     sqlFunction,
                                     ((LogicalProject) getRel(uncollect.getInput())).getProjects());
             return new LogicalTableFunctionScan(

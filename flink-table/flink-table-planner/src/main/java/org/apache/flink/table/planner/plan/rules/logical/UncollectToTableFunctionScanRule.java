@@ -98,7 +98,7 @@ public class UncollectToTableFunctionScanRule
                 cluster.getRexBuilder()
                         .makeCall(
                                 typeFactory.createFieldTypeFromLogicalType(
-                                        toRowType(UnnestRowsFunction.getUnnestedType(logicalType))),
+                                        toRowType(UnnestRowsFunction.getUnnestedType(logicalType, uc.withOrdinality))),
                                 sqlFunction,
                                 ((LogicalProject) getRel(uc.getInput())).getProjects());
         return new LogicalTableFunctionScan(
