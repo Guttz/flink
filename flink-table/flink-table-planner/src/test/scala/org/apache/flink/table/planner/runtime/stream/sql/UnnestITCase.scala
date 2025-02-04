@@ -114,7 +114,6 @@ class UnnestITCase(mode: StateBackendMode) extends StreamingWithStateTestBase(mo
     val data = List(
       (1, 1, (12, "45.6")),
       (2, 2, (12, "45.612")),
-      (2, 2, (12, "45.612")),
       (3, 2, (13, "41.6")),
       (4, 3, (14, "45.2136")),
       (5, 3, (18, "42.6")))

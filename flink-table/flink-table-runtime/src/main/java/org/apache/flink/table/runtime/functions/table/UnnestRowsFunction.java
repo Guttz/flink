@@ -48,8 +48,8 @@ public class UnnestRowsFunction extends BuiltInSpecializedFunction {
     public UserDefinedFunction specialize(SpecializedContext context) {
         final LogicalType argType =
                 context.getCallContext().getArgumentDataTypes().get(0).getLogicalType();
-        //final boolean withOrdinality = context.getCallContext().isWithOrdinality();
-        final boolean withOrdinality = true;
+        final boolean withOrdinality = context.getCallContext().getArgumentDataTypes().size() == 2
+                && context.getCallContext().getArgumentValue(1, Boolean.class).orElse(false);
         switch (argType.getTypeRoot()) {
             case ARRAY:
                 final ArrayType arrayType = (ArrayType) argType;
@@ -122,6 +122,7 @@ public class UnnestRowsFunction extends BuiltInSpecializedFunction {
             this.withOrdinality = withOrdinality;
             // The output type in the context is already wrapped, however, the result of the
             // function is not. Therefore, we need a custom output type.
+            // todo gustavo make this simpler
             if (outputType instanceof RowType && ((RowType) outputType).getFieldCount() == 2) {
                 // Special handling for map types which are represented as ROW(f0, f1)
                 RowType rowType = (RowType) outputType;
@@ -186,17 +187,33 @@ public class UnnestRowsFunction extends BuiltInSpecializedFunction {
             this.elementGetter = elementGetter;
         }
 
+        public void eval(ArrayData arrayData, Boolean withOrdinality) {
+            if (arrayData == null) {
+                return;
+            }
+            final int size = arrayData.size();
+            for (int pos = 0; pos < size; pos++) {
+                if (withOrdinality) {
+                    collect(wrapWithOrdinality(elementGetter.getElementOrNull(arrayData, pos), pos + 1));
+                } else {
+                    collect(elementGetter.getElementOrNull(arrayData, pos));
+                }
+
+            }
+        }
+
         public void eval(ArrayData arrayData) {
             if (arrayData == null) {
                 return;
             }
             final int size = arrayData.size();
             for (int pos = 0; pos < size; pos++) {
-                collect(wrapWithOrdinality(elementGetter.getElementOrNull(arrayData, pos), pos + 1));
+                    collect(elementGetter.getElementOrNull(arrayData, pos));
+
             }
         }
 
-        public void eval(MapData mapData) {
+        public void eval(MapData mapData, Boolean withOrdinality) {
             if (mapData == null) {
                 return;
             }
@@ -208,7 +225,11 @@ public class UnnestRowsFunction extends BuiltInSpecializedFunction {
                 final int multiplier = values.getInt(pos);
                 final Object key = elementGetter.getElementOrNull(keys, pos);
                 for (int i = 0; i < multiplier; i++) {
-                    collect(wrapWithOrdinality(key, ordinal++));
+                    if (withOrdinality) {
+                        collect(wrapWithOrdinality(key, ordinal++));
+                    } else {
+                        collect(key);
+                    }
                 }
             }
         }
@@ -233,7 +254,7 @@ public class UnnestRowsFunction extends BuiltInSpecializedFunction {
             this.valueGetter = valueGetter;
         }
 
-        public void eval(MapData mapData) {
+        public void eval(MapData mapData, Boolean withOrdinality) {
             if (mapData == null) {
                 return;
             }
@@ -241,12 +262,17 @@ public class UnnestRowsFunction extends BuiltInSpecializedFunction {
             final ArrayData keyArray = mapData.keyArray();
             final ArrayData valueArray = mapData.valueArray();
             for (int i = 0; i < size; i++) {
-                collect(
-                        wrapWithOrdinality(
-                                GenericRowData.of(
-                                        keyGetter.getElementOrNull(keyArray, i),
-                                        valueGetter.getElementOrNull(valueArray, i)),
-                                i + 1));
+                if (withOrdinality) {
+                    collect(wrapWithOrdinality(
+                                    GenericRowData.of(
+                                            keyGetter.getElementOrNull(keyArray, i),
+                                            valueGetter.getElementOrNull(valueArray, i)),
+                                    i + 1));
+                } else {
+                    collect(GenericRowData.of(
+                                    keyGetter.getElementOrNull(keyArray, i),
+                                    valueGetter.getElementOrNull(valueArray, i)));
+                }
             }
         }
     }

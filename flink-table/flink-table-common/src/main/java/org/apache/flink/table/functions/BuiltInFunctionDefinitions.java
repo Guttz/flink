@@ -471,6 +471,19 @@ public final class BuiltInFunctionDefinitions {
             BuiltInFunctionDefinition.newBuilder()
                     .name("$UNNEST_ROWS$1")
                     .kind(TABLE)
+                    .inputTypeStrategy(
+                            /*TODO gustavo: do i need an or here? prob not
+                                 or(
+                                sequence(
+                                    new String[] {"input"},
+                                    new ArgumentTypeStrategy[] {ANY}),*/
+                                sequence(
+                                        new String[] {"input", "withOrdinality"},
+                                        new ArgumentTypeStrategy[] {
+                                                ANY,
+                                                and(logical(LogicalTypeRoot.BOOLEAN), LITERAL)})
+                            //)
+                    )
                     .outputTypeStrategy(SpecificTypeStrategies.UNUSED)
                     .runtimeClass(
                             "org.apache.flink.table.runtime.functions.table.UnnestRowsFunction")
