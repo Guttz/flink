@@ -88,33 +88,23 @@ public class UnnestRowsFunction extends BuiltInSpecializedFunction {
                 baseType = ((MultisetType) logicalType).getElementType();
                 break;
             case MAP:
-                final MapType mapType = (MapType) logicalType;
-                baseType = RowType.of(false, mapType.getKeyType(), mapType.getValueType());
-                break;
+                MapType mapType = (MapType) logicalType;
+                if (withOrdinality) {
+                    return RowType.of(
+                        false,
+                        new LogicalType[]{mapType.getKeyType(), mapType.getValueType(), DataTypes.INT().notNull().getLogicalType()},
+                        new String[]{"f0", "f1", "ordinality"});
+                }
+                return RowType.of(false, mapType.getKeyType(), mapType.getValueType());
             default:
                 throw new UnsupportedOperationException("Unsupported UNNEST type: " + logicalType);
         }
 
         if (withOrdinality) {
-            if (baseType instanceof RowType) {
-                // For row types, add the ordinal field
-                RowType rowType = (RowType) baseType;
-                LogicalType[] fieldTypes = new LogicalType[rowType.getFieldCount() + 1];
-                String[] fieldNames = new String[rowType.getFieldCount() + 1];
-                for (int i = 0; i < rowType.getFieldCount(); i++) {
-                    fieldTypes[i] = rowType.getTypeAt(i);
-                    fieldNames[i] = rowType.getFieldNames().get(i);
-                }
-                fieldTypes[rowType.getFieldCount()] = DataTypes.INT().notNull().getLogicalType();
-                fieldNames[rowType.getFieldCount()] = "ordinality";
-                return RowType.of(false, fieldTypes, fieldNames);
-            } else {
-                // For non-row types, wrap in a row with the original type and ordinal field
-                return RowType.of(
-                    false,
-                    new LogicalType[]{baseType, DataTypes.INT().notNull().getLogicalType()},
-                    new String[]{"f0", "ordinality"});
-            }
+            return RowType.of(
+                false,
+                new LogicalType[]{baseType, DataTypes.INT().notNull().getLogicalType()},
+                new String[]{"f0", "ordinality"});
         }
         return baseType;
     }
@@ -132,7 +122,22 @@ public class UnnestRowsFunction extends BuiltInSpecializedFunction {
             this.withOrdinality = withOrdinality;
             // The output type in the context is already wrapped, however, the result of the
             // function is not. Therefore, we need a custom output type.
-            if (withOrdinality){
+            if (outputType instanceof RowType && ((RowType) outputType).getFieldCount() == 2) {
+                // Special handling for map types which are represented as ROW(f0, f1)
+                RowType rowType = (RowType) outputType;
+                if (withOrdinality) {
+                    outputDataType = DataTypes.ROW(
+                            DataTypes.FIELD("f0", DataTypes.of(rowType.getTypeAt(0))),
+                            DataTypes.FIELD("f1", DataTypes.of(rowType.getTypeAt(1))),
+                            DataTypes.FIELD("ordinality", DataTypes.INT().notNull())
+                    ).toInternal();
+                } else {
+                    outputDataType = DataTypes.ROW(
+                            DataTypes.FIELD("f0", DataTypes.of(rowType.getTypeAt(0))),
+                            DataTypes.FIELD("f1", DataTypes.of(rowType.getTypeAt(1)))
+                    ).toInternal();
+                }
+            } else if (withOrdinality) {
                 outputDataType = DataTypes.ROW(
                         DataTypes.FIELD("f0", DataTypes.of(outputType).notNull()),
                         DataTypes.FIELD("ordinality", DataTypes.INT().notNull())
