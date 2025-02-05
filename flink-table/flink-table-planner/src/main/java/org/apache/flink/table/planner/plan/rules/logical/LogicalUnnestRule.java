@@ -130,10 +130,13 @@ public class LogicalUnnestRule extends RelRule<LogicalUnnestRule.LogicalUnnestRu
                                     .getValue();
             LogicalType logicalType = FlinkTypeFactory.toLogicalType(relDataType);
 
-            BridgingSqlFunction sqlFunction = BridgingSqlFunction.of(
-                            cluster, uncollect.withOrdinality ? 
-                                BuiltInFunctionDefinitions.INTERNAL_UNNEST_ROWS_WITH_ORDINALITY :
-                                BuiltInFunctionDefinitions.INTERNAL_UNNEST_ROWS);
+            BridgingSqlFunction sqlFunction =
+                    BridgingSqlFunction.of(
+                            cluster,
+                            uncollect.withOrdinality
+                                    ? BuiltInFunctionDefinitions
+                                            .INTERNAL_UNNEST_ROWS_WITH_ORDINALITY
+                                    : BuiltInFunctionDefinitions.INTERNAL_UNNEST_ROWS);
             RexNode rexCall =
                     cluster.getRexBuilder()
                             .makeCall(
@@ -144,8 +147,9 @@ public class LogicalUnnestRule extends RelRule<LogicalUnnestRule.LogicalUnnestRu
                                                             uncollect.withOrdinality))),
                                     sqlFunction,
                                     ImmutableList.of(
-                                        ((LogicalProject) getRel(uncollect.getInput())).getProjects().get(0)
-                                    ));
+                                            ((LogicalProject) getRel(uncollect.getInput()))
+                                                    .getProjects()
+                                                    .get(0)));
             return new LogicalTableFunctionScan(
                     cluster,
                     correlate.getTraitSet(),

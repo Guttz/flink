@@ -30,8 +30,8 @@ import org.apache.flink.table.types.logical.RowType;
 
 /**
  * Flattens ARRAY, MAP, and MULTISET using a table function and adds one extra column with the
- * position of the element. It does this by another level of specialization using
- * a subclass of {@link UnnestTableFunctionBase}.
+ * position of the element. It does this by another level of specialization using a subclass of
+ * {@link UnnestTableFunctionBase}.
  */
 @Internal
 public class UnnestRowsWithOrdinalityFunction extends UnnestRowsFunctionBase {
@@ -45,10 +45,7 @@ public class UnnestRowsWithOrdinalityFunction extends UnnestRowsFunctionBase {
             SpecializedContext context,
             LogicalType elementType,
             ArrayData.ElementGetter elementGetter) {
-        return new CollectionUnnestWithOrdinalityFunction(
-                context,
-                elementType,
-                elementGetter);
+        return new CollectionUnnestWithOrdinalityFunction(context, elementType, elementGetter);
     }
 
     @Override
@@ -57,15 +54,14 @@ public class UnnestRowsWithOrdinalityFunction extends UnnestRowsFunctionBase {
             RowType keyValTypes,
             ArrayData.ElementGetter keyGetter,
             ArrayData.ElementGetter valueGetter) {
-        return new MapUnnestWithOrdinalityFunction(
-                context,
-                keyValTypes,
-                keyGetter,
-                valueGetter);
+        return new MapUnnestWithOrdinalityFunction(context, keyValTypes, keyGetter, valueGetter);
     }
 
-    /** Table function that unwraps the elements of a collection (array or multiset) with ordinality. */
-    public static final class CollectionUnnestWithOrdinalityFunction extends UnnestTableFunctionBase {
+    /**
+     * Table function that unwraps the elements of a collection (array or multiset) with ordinality.
+     */
+    public static final class CollectionUnnestWithOrdinalityFunction
+            extends UnnestTableFunctionBase {
 
         private static final long serialVersionUID = 1L;
 
@@ -79,10 +75,11 @@ public class UnnestRowsWithOrdinalityFunction extends UnnestRowsFunctionBase {
             super(context, elementType);
             this.elementGetter = elementGetter;
 
-            outputDataType = DataTypes.ROW(
-                    DataTypes.FIELD("f0", DataTypes.of(elementType).notNull()),
-                    DataTypes.FIELD("ordinality", DataTypes.INT().notNull())
-            ).toInternal();
+            outputDataType =
+                    DataTypes.ROW(
+                                    DataTypes.FIELD("f0", DataTypes.of(elementType).notNull()),
+                                    DataTypes.FIELD("ordinality", DataTypes.INT().notNull()))
+                            .toInternal();
         }
 
         @Override
@@ -91,13 +88,17 @@ public class UnnestRowsWithOrdinalityFunction extends UnnestRowsFunctionBase {
         }
 
         public void eval(ArrayData arrayData) {
-            evalArrayData(arrayData, elementGetter, 
-                (element, position) -> collect(GenericRowData.of(element, position)));
+            evalArrayData(
+                    arrayData,
+                    elementGetter,
+                    (element, position) -> collect(GenericRowData.of(element, position)));
         }
 
         public void eval(MapData mapData) {
-            evalMultisetData(mapData, elementGetter,
-                (element, position) -> collect(GenericRowData.of(element, position)));
+            evalMultisetData(
+                    mapData,
+                    elementGetter,
+                    (element, position) -> collect(GenericRowData.of(element, position)));
         }
     }
 
@@ -121,11 +122,12 @@ public class UnnestRowsWithOrdinalityFunction extends UnnestRowsFunctionBase {
             this.valueGetter = valueGetter;
 
             RowType rowType = (RowType) keyValTypes;
-            outputDataType = DataTypes.ROW(
-                    DataTypes.FIELD("f0", DataTypes.of(rowType.getTypeAt(0))),
-                    DataTypes.FIELD("f1", DataTypes.of(rowType.getTypeAt(1))),
-                    DataTypes.FIELD("ordinality", DataTypes.INT().notNull())
-            ).toInternal();
+            outputDataType =
+                    DataTypes.ROW(
+                                    DataTypes.FIELD("f0", DataTypes.of(rowType.getTypeAt(0))),
+                                    DataTypes.FIELD("f1", DataTypes.of(rowType.getTypeAt(1))),
+                                    DataTypes.FIELD("ordinality", DataTypes.INT().notNull()))
+                            .toInternal();
         }
 
         @Override
@@ -134,8 +136,11 @@ public class UnnestRowsWithOrdinalityFunction extends UnnestRowsFunctionBase {
         }
 
         public void eval(MapData mapData) {
-            evalMapData(mapData, keyGetter, valueGetter,
-                (key, value, position) -> collect(GenericRowData.of(key, value, position)));
+            evalMapData(
+                    mapData,
+                    keyGetter,
+                    valueGetter,
+                    (key, value, position) -> collect(GenericRowData.of(key, value, position)));
         }
     }
-} 
+}

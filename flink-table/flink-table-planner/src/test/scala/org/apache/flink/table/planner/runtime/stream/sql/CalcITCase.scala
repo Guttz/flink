@@ -790,18 +790,18 @@ class CalcITCase extends StreamingTestBase {
     assertThat(sink.getAppendResults.sorted).isEqualTo(expected.sorted)
   }
 
-
-
   @Test
   def testUnnest(): Unit = {
     val sqlQuery =
       "SELECT * FROM UNNEST(ARRAY[1, 2, 3]) WITH ORDINALITY;"
     val result = tEnv.sqlQuery(sqlQuery)
     val sink = new TestingAppendSink
-    tEnv.toDataStream(result, DataTypes.ROW(DataTypes.INT().notNull(), DataTypes.INT().notNull())).addSink(sink)
+    tEnv
+      .toDataStream(result, DataTypes.ROW(DataTypes.INT().notNull(), DataTypes.INT().notNull()))
+      .addSink(sink)
     env.execute()
 
-    val expected = List( "1,1", "2,2", "3,3")
+    val expected = List("1,1", "2,2", "3,3")
     assertThat(sink.getAppendResults.sorted).isEqualTo(expected.sorted)
   }
 

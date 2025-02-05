@@ -379,21 +379,15 @@ class UnnestITCase(mode: StateBackendMode) extends StreamingWithStateTestBase(mo
     tEnv.createTemporaryView("T", t)
 
     val sqlQuery = """
-      |SELECT a, number, ordinality 
-      |FROM T CROSS JOIN UNNEST(b) WITH ORDINALITY AS t(number, ordinality)
-      |""".stripMargin
+                     |SELECT a, number, ordinality 
+                     |FROM T CROSS JOIN UNNEST(b) WITH ORDINALITY AS t(number, ordinality)
+                     |""".stripMargin
     val result = tEnv.sqlQuery(sqlQuery).toDataStream
     val sink = new TestingAppendSink
     result.addSink(sink)
     env.execute()
 
-    val expected = List(
-      "1,12,1",
-      "1,45,2",
-      "2,41,1",
-      "2,5,2",
-      "3,18,1",
-      "3,42,2")
+    val expected = List("1,12,1", "1,45,2", "2,41,1", "2,5,2", "3,18,1", "3,42,2")
     assertThat(sink.getAppendResults.sorted).isEqualTo(expected.sorted)
   }
 
@@ -460,20 +454,16 @@ class UnnestITCase(mode: StateBackendMode) extends StreamingWithStateTestBase(mo
     tEnv.createTemporaryView("T", t)
 
     val sqlQuery = """
-      |SELECT id, k, v
-      |FROM T CROSS JOIN UNNEST(map_data) WITH ORDINALITY AS f(k, v, pos)
-      |""".stripMargin
+                     |SELECT id, k, v
+                     |FROM T CROSS JOIN UNNEST(map_data) WITH ORDINALITY AS f(k, v, pos)
+                     |""".stripMargin
     val result = tEnv.sqlQuery(sqlQuery).toDataStream
 
     val sink = new TestingAppendSink
     result.addSink(sink)
     env.execute()
 
-    val expected = List(
-      "1,a,10",
-      "1,b,11",
-      "2,c,20",
-      "2,d,21")
+    val expected = List("1,a,10", "1,b,11", "2,c,20", "2,d,21")
 
     assertThat(sink.getAppendResults.sorted).isEqualTo(expected.sorted)
   }
@@ -490,10 +480,10 @@ class UnnestITCase(mode: StateBackendMode) extends StreamingWithStateTestBase(mo
     tEnv.createTemporaryView("T", t)
 
     val sqlQuery = """
-      |WITH T1 AS (SELECT a, COLLECT(c) as words FROM T GROUP BY a)
-      |SELECT a, word, pos 
-      |FROM T1 CROSS JOIN UNNEST(words) WITH ORDINALITY AS A(word, pos)
-      |""".stripMargin
+                     |WITH T1 AS (SELECT a, COLLECT(c) as words FROM T GROUP BY a)
+                     |SELECT a, word, pos 
+                     |FROM T1 CROSS JOIN UNNEST(words) WITH ORDINALITY AS A(word, pos)
+                     |""".stripMargin
     val result = tEnv.sqlQuery(sqlQuery).toRetractStream[Row]
     val sink = new TestingRetractSink
     result.addSink(sink)
@@ -504,7 +494,7 @@ class UnnestITCase(mode: StateBackendMode) extends StreamingWithStateTestBase(mo
       "1,Hello,2",
       "2,World,1",
       "3,Hello world,1"
-      )
+    )
     assertThat(sink.getRetractResults.sorted).isEqualTo(expected.sorted)
   }
 

@@ -32,9 +32,7 @@ import org.apache.flink.table.types.logical.MapType;
 import org.apache.flink.table.types.logical.MultisetType;
 import org.apache.flink.table.types.logical.RowType;
 
-/**
- * Base class for flattening ARRAY, MAP, and MULTISET using a table function.
- */
+/** Base class for flattening ARRAY, MAP, and MULTISET using a table function. */
 @Internal
 public abstract class UnnestRowsFunctionBase extends BuiltInSpecializedFunction {
 
@@ -95,9 +93,13 @@ public abstract class UnnestRowsFunctionBase extends BuiltInSpecializedFunction 
                 MapType mapType = (MapType) logicalType;
                 if (withOrdinality) {
                     return RowType.of(
-                        false,
-                        new LogicalType[]{mapType.getKeyType(), mapType.getValueType(), DataTypes.INT().notNull().getLogicalType()},
-                        new String[]{"f0", "f1", "ordinality"});
+                            false,
+                            new LogicalType[] {
+                                mapType.getKeyType(),
+                                mapType.getValueType(),
+                                DataTypes.INT().notNull().getLogicalType()
+                            },
+                            new String[] {"f0", "f1", "ordinality"});
                 }
                 return RowType.of(false, mapType.getKeyType(), mapType.getValueType());
             default:
@@ -106,9 +108,9 @@ public abstract class UnnestRowsFunctionBase extends BuiltInSpecializedFunction 
 
         if (withOrdinality) {
             return RowType.of(
-                false,
-                new LogicalType[]{baseType, DataTypes.INT().notNull().getLogicalType()},
-                new String[]{"f0", "ordinality"});
+                    false,
+                    new LogicalType[] {baseType, DataTypes.INT().notNull().getLogicalType()},
+                    new String[] {"f0", "ordinality"});
         }
         return baseType;
     }
@@ -133,7 +135,10 @@ public abstract class UnnestRowsFunctionBase extends BuiltInSpecializedFunction 
             return outputDataType;
         }
 
-        protected void evalArrayData(ArrayData arrayData, ArrayData.ElementGetter elementGetter, UnnestCollector collector) {
+        protected void evalArrayData(
+                ArrayData arrayData,
+                ArrayData.ElementGetter elementGetter,
+                UnnestCollector collector) {
             if (arrayData == null) {
                 return;
             }
@@ -143,7 +148,11 @@ public abstract class UnnestRowsFunctionBase extends BuiltInSpecializedFunction 
             }
         }
 
-        protected void evalMapData(MapData mapData, ArrayData.ElementGetter keyGetter, ArrayData.ElementGetter valueGetter, MapUnnestCollector collector) {
+        protected void evalMapData(
+                MapData mapData,
+                ArrayData.ElementGetter keyGetter,
+                ArrayData.ElementGetter valueGetter,
+                MapUnnestCollector collector) {
             if (mapData == null) {
                 return;
             }
@@ -152,13 +161,14 @@ public abstract class UnnestRowsFunctionBase extends BuiltInSpecializedFunction 
             final ArrayData valueArray = mapData.valueArray();
             for (int i = 0; i < size; i++) {
                 collector.collect(
-                    keyGetter.getElementOrNull(keyArray, i),
-                    valueGetter.getElementOrNull(valueArray, i),
-                    i + 1);
+                        keyGetter.getElementOrNull(keyArray, i),
+                        valueGetter.getElementOrNull(valueArray, i),
+                        i + 1);
             }
         }
 
-        protected void evalMultisetData(MapData mapData, ArrayData.ElementGetter elementGetter, UnnestCollector collector) {
+        protected void evalMultisetData(
+                MapData mapData, ArrayData.ElementGetter elementGetter, UnnestCollector collector) {
             if (mapData == null) {
                 return;
             }

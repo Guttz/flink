@@ -19,15 +19,12 @@
 package org.apache.flink.table.runtime.functions.table;
 
 import org.apache.flink.annotation.Internal;
-import org.apache.flink.table.api.DataTypes;
 import org.apache.flink.table.data.ArrayData;
 import org.apache.flink.table.data.GenericRowData;
 import org.apache.flink.table.data.MapData;
 import org.apache.flink.table.functions.UserDefinedFunction;
-import org.apache.flink.table.types.DataType;
 import org.apache.flink.table.types.logical.LogicalType;
 import org.apache.flink.table.types.logical.RowType;
-import static org.apache.flink.table.types.logical.utils.LogicalTypeUtils.toRowType;
 
 /**
  * Flattens ARRAY, MAP, and MULTISET using a table function. It does this by another level of
@@ -45,10 +42,7 @@ public class UnnestRowsFunction extends UnnestRowsFunctionBase {
             SpecializedContext context,
             LogicalType elementType,
             ArrayData.ElementGetter elementGetter) {
-        return new CollectionUnnestFunction(
-                context,
-                elementType,
-                elementGetter);
+        return new CollectionUnnestFunction(context, elementType, elementGetter);
     }
 
     @Override
@@ -57,11 +51,7 @@ public class UnnestRowsFunction extends UnnestRowsFunctionBase {
             RowType keyValTypes,
             ArrayData.ElementGetter keyGetter,
             ArrayData.ElementGetter valueGetter) {
-        return new MapUnnestFunction(
-                context,
-                keyValTypes,
-                keyGetter,
-                valueGetter);
+        return new MapUnnestFunction(context, keyValTypes, keyGetter, valueGetter);
     }
 
     /** Table function that unwraps the elements of a collection (array or multiset). */
@@ -106,10 +96,12 @@ public class UnnestRowsFunction extends UnnestRowsFunctionBase {
             this.valueGetter = valueGetter;
         }
 
-
         public void eval(MapData mapData) {
-            evalMapData(mapData, keyGetter, valueGetter, 
-                (key, value, position) -> collect(GenericRowData.of(key, value)));
+            evalMapData(
+                    mapData,
+                    keyGetter,
+                    valueGetter,
+                    (key, value, position) -> collect(GenericRowData.of(key, value)));
         }
     }
-} 
+}
