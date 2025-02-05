@@ -78,6 +78,7 @@ public class UnnestRowsWithOrdinalityFunction extends UnnestRowsFunctionBase {
                 ArrayData.ElementGetter elementGetter) {
             super(context, elementType);
             this.elementGetter = elementGetter;
+
             outputDataType = DataTypes.ROW(
                     DataTypes.FIELD("f0", DataTypes.of(elementType).notNull()),
                     DataTypes.FIELD("ordinality", DataTypes.INT().notNull())

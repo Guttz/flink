@@ -27,6 +27,7 @@ import org.apache.flink.table.functions.UserDefinedFunction;
 import org.apache.flink.table.types.DataType;
 import org.apache.flink.table.types.logical.LogicalType;
 import org.apache.flink.table.types.logical.RowType;
+import static org.apache.flink.table.types.logical.utils.LogicalTypeUtils.toRowType;
 
 /**
  * Flattens ARRAY, MAP, and MULTISET using a table function. It does this by another level of
@@ -69,7 +70,6 @@ public class UnnestRowsFunction extends UnnestRowsFunctionBase {
         private static final long serialVersionUID = 1L;
 
         private final ArrayData.ElementGetter elementGetter;
-        private final transient DataType outputDataType;
 
         public CollectionUnnestFunction(
                 SpecializedContext context,
@@ -77,12 +77,6 @@ public class UnnestRowsFunction extends UnnestRowsFunctionBase {
                 ArrayData.ElementGetter elementGetter) {
             super(context, elementType);
             this.elementGetter = elementGetter;
-            outputDataType = DataTypes.of(elementType).toInternal();
-        }
-
-        @Override
-        public DataType getOutputDataType() {
-            return outputDataType;
         }
 
         public void eval(ArrayData arrayData) {
@@ -102,8 +96,6 @@ public class UnnestRowsFunction extends UnnestRowsFunctionBase {
         private final ArrayData.ElementGetter keyGetter;
         private final ArrayData.ElementGetter valueGetter;
 
-        private final transient DataType outputDataType;
-
         public MapUnnestFunction(
                 SpecializedContext context,
                 LogicalType keyValTypes,
@@ -112,18 +104,8 @@ public class UnnestRowsFunction extends UnnestRowsFunctionBase {
             super(context, keyValTypes);
             this.keyGetter = keyGetter;
             this.valueGetter = valueGetter;
-
-            RowType rowType = (RowType) keyValTypes;
-            outputDataType = DataTypes.ROW(
-                    DataTypes.FIELD("f0", DataTypes.of(rowType.getTypeAt(0))),
-                    DataTypes.FIELD("f1", DataTypes.of(rowType.getTypeAt(1)))
-            ).toInternal();
         }
 
-        @Override
-        public DataType getOutputDataType() {
-            return outputDataType;
-        }
 
         public void eval(MapData mapData) {
             evalMapData(mapData, keyGetter, valueGetter, 

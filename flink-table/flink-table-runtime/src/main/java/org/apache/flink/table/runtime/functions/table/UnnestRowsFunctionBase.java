@@ -119,15 +119,19 @@ public abstract class UnnestRowsFunctionBase extends BuiltInSpecializedFunction 
 
     /** Base class for table functions that unwrap collections and maps. */
     protected abstract static class UnnestTableFunctionBase extends BuiltInTableFunction<Object> {
+        private final transient DataType outputDataType;
 
-        UnnestTableFunctionBase(SpecializedContext context, LogicalType outputType) {
+        UnnestTableFunctionBase(SpecializedContext context, LogicalType elementType) {
             super(BuiltInFunctionDefinitions.INTERNAL_UNNEST_ROWS, context);
+            outputDataType = DataTypes.of(elementType).toInternal();
         }
 
         // The output type in the context is already wrapped, however, the result of the function
         // is not. Therefore, we this function has to be implemented with the custom output type.
         @Override
-        public abstract DataType getOutputDataType();
+        public DataType getOutputDataType() {
+            return outputDataType;
+        }
 
         protected void evalArrayData(ArrayData arrayData, ArrayData.ElementGetter elementGetter, UnnestCollector collector) {
             if (arrayData == null) {
