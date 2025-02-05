@@ -471,22 +471,20 @@ public final class BuiltInFunctionDefinitions {
             BuiltInFunctionDefinition.newBuilder()
                     .name("$UNNEST_ROWS$1")
                     .kind(TABLE)
-                    .inputTypeStrategy(
-                            /*TODO gustavo: do i need an or here? prob not
-                                 or(
-                                sequence(
-                                    new String[] {"input"},
-                                    new ArgumentTypeStrategy[] {ANY}),*/
-                                sequence(
-                                        new String[] {"input", "withOrdinality"},
-                                        new ArgumentTypeStrategy[] {
-                                                ANY,
-                                                and(logical(LogicalTypeRoot.BOOLEAN), LITERAL)})
-                            //)
-                    )
                     .outputTypeStrategy(SpecificTypeStrategies.UNUSED)
                     .runtimeClass(
                             "org.apache.flink.table.runtime.functions.table.UnnestRowsFunction")
+                    .internal()
+                    .build();
+
+    public static final BuiltInFunctionDefinition INTERNAL_UNNEST_ROWS_WITH_ORDINALITY =
+            BuiltInFunctionDefinition.newBuilder()
+                    .name("$UNNEST_ROWS_WITH_ORDINALITY$1")
+                    .kind(TABLE)
+                    .inputTypeStrategy(sequence(ANY))
+                    .outputTypeStrategy(SpecificTypeStrategies.UNUSED)
+                    .runtimeClass(
+                            "org.apache.flink.table.runtime.functions.table.UnnestRowsWithOrdinalityFunction")
                     .internal()
                     .build();
 

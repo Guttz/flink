@@ -22,7 +22,7 @@ import org.apache.flink.table.functions.BuiltInFunctionDefinitions;
 import org.apache.flink.table.planner.calcite.FlinkTypeFactory;
 import org.apache.flink.table.planner.functions.bridging.BridgingSqlFunction;
 import org.apache.flink.table.planner.utils.ShortcutUtils;
-import org.apache.flink.table.runtime.functions.table.UnnestRowsFunction;
+import org.apache.flink.table.runtime.functions.table.AbstractUnnestRowsFunction;
 import org.apache.flink.table.types.logical.LogicalType;
 
 import org.apache.flink.shaded.guava32.com.google.common.collect.ImmutableList;
@@ -130,22 +130,21 @@ public class LogicalUnnestRule extends RelRule<LogicalUnnestRule.LogicalUnnestRu
                                     .getValue();
             LogicalType logicalType = FlinkTypeFactory.toLogicalType(relDataType);
 
-            // todo gustavo - maybe another function with ordinality here? hmm think about it
-            BridgingSqlFunction sqlFunction =
-                    BridgingSqlFunction.of(
-                            cluster, BuiltInFunctionDefinitions.INTERNAL_UNNEST_ROWS);
+            BridgingSqlFunction sqlFunction = BridgingSqlFunction.of(
+                            cluster, uncollect.withOrdinality ? 
+                                BuiltInFunctionDefinitions.INTERNAL_UNNEST_ROWS_WITH_ORDINALITY :
+                                BuiltInFunctionDefinitions.INTERNAL_UNNEST_ROWS);
             RexNode rexCall =
                     cluster.getRexBuilder()
                             .makeCall(
                                     typeFactory.createFieldTypeFromLogicalType(
                                             toRowType(
-                                                    UnnestRowsFunction.getUnnestedType(
+                                                    AbstractUnnestRowsFunction.getUnnestedType(
                                                             logicalType,
                                                             uncollect.withOrdinality))),
                                     sqlFunction,
                                     ImmutableList.of(
-                                        ((LogicalProject) getRel(uncollect.getInput())).getProjects().get(0),
-                                        cluster.getRexBuilder().makeLiteral(uncollect.withOrdinality)
+                                        ((LogicalProject) getRel(uncollect.getInput())).getProjects().get(0)
                                     ));
             return new LogicalTableFunctionScan(
                     cluster,
