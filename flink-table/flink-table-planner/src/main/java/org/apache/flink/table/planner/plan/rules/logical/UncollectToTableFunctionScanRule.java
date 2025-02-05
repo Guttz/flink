@@ -37,7 +37,6 @@ import org.apache.calcite.rel.logical.LogicalTableFunctionScan;
 import org.apache.calcite.rel.logical.LogicalValues;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexNode;
-import org.apache.calcite.sql.SqlFunction;
 import org.immutables.value.Value;
 
 import java.util.Collections;
@@ -95,8 +94,7 @@ public class UncollectToTableFunctionScanRule
                 BridgingSqlFunction.of(
                         cluster,
                         uc.withOrdinality
-                                ? BuiltInFunctionDefinitions
-                                .INTERNAL_UNNEST_ROWS_WITH_ORDINALITY
+                                ? BuiltInFunctionDefinitions.INTERNAL_UNNEST_ROWS_WITH_ORDINALITY
                                 : BuiltInFunctionDefinitions.INTERNAL_UNNEST_ROWS);
 
         RexNode rexCall =

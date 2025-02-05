@@ -635,6 +635,29 @@ class UnnestITCase(mode: StateBackendMode) extends StreamingWithStateTestBase(mo
     assertThat(resultsWithoutordinality.sorted).isEqualTo(expected.sorted)
   }
 
+  @TestTemplate
+  def testUnnestArrayWithMixedTypesAndOrdinality(): Unit = {
+    val data = List(
+      (1, Array(10, "20")),
+      (2, Array(30, "40"))
+    )
+    val t = StreamingEnvUtil.fromCollection(env, data).toTable(tEnv, 'a, 'b)
+    tEnv.createTemporaryView("T", t)
+
+    val sqlQuery =
+      """
+        |SELECT a, number, ordinality
+        |FROM T CROSS JOIN UNNEST(b) WITH ORDINALITY AS m(number, ordinality)
+        |""".stripMargin
+    val result = tEnv.sqlQuery(sqlQuery).toDataStream
+    val sink = new TestingAppendSink
+    result.addSink(sink)
+    env.execute()
+
+    val expected = List("1,10,1", "1,20,2", "2,30,1", "2,40,2")
+    assertThat(sink.getAppendResults.sorted).isEqualTo(expected.sorted)
+  }
+
   /* Utility for maps to assert that ordinality is within range and remove it from output.
   * Necessary since maps are not ordered */
   def assertAndRemoveOrdinality(results: List[String], maxOrdinality: Int): List[String] = {
