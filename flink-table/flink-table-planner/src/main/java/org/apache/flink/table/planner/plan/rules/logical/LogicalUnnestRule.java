@@ -146,10 +146,7 @@ public class LogicalUnnestRule extends RelRule<LogicalUnnestRule.LogicalUnnestRu
                                                             logicalType,
                                                             uncollect.withOrdinality))),
                                     sqlFunction,
-                                    ImmutableList.of(
-                                            ((LogicalProject) getRel(uncollect.getInput()))
-                                                    .getProjects()
-                                                    .get(0)));
+                                    ((LogicalProject) getRel(uncollect.getInput())).getProjects());
             return new LogicalTableFunctionScan(
                     cluster,
                     correlate.getTraitSet(),

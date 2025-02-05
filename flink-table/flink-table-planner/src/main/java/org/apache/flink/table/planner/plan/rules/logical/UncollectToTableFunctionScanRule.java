@@ -91,8 +91,13 @@ public class UncollectToTableFunctionScanRule
         RelDataType relDataType = uc.getInput().getRowType().getFieldList().get(0).getValue();
         LogicalType logicalType = FlinkTypeFactory.toLogicalType(relDataType);
 
-        SqlFunction sqlFunction =
-                BridgingSqlFunction.of(cluster, BuiltInFunctionDefinitions.INTERNAL_UNNEST_ROWS);
+        BridgingSqlFunction sqlFunction =
+                BridgingSqlFunction.of(
+                        cluster,
+                        uc.withOrdinality
+                                ? BuiltInFunctionDefinitions
+                                .INTERNAL_UNNEST_ROWS_WITH_ORDINALITY
+                                : BuiltInFunctionDefinitions.INTERNAL_UNNEST_ROWS);
 
         RexNode rexCall =
                 cluster.getRexBuilder()
