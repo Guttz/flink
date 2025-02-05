@@ -22,7 +22,7 @@ import org.apache.flink.table.functions.BuiltInFunctionDefinitions;
 import org.apache.flink.table.planner.calcite.FlinkTypeFactory;
 import org.apache.flink.table.planner.functions.bridging.BridgingSqlFunction;
 import org.apache.flink.table.planner.utils.ShortcutUtils;
-import org.apache.flink.table.runtime.functions.table.AbstractUnnestRowsFunction;
+import org.apache.flink.table.runtime.functions.table.UnnestRowsFunctionBase;
 import org.apache.flink.table.types.logical.LogicalType;
 
 import org.apache.calcite.plan.RelOptCluster;
@@ -98,7 +98,7 @@ public class UncollectToTableFunctionScanRule
                 cluster.getRexBuilder()
                         .makeCall(
                                 typeFactory.createFieldTypeFromLogicalType(
-                                        toRowType(AbstractUnnestRowsFunction.getUnnestedType(logicalType, uc.withOrdinality))),
+                                        toRowType(UnnestRowsFunctionBase.getUnnestedType(logicalType, uc.withOrdinality))),
                                 sqlFunction,
                                 ((LogicalProject) getRel(uc.getInput())).getProjects());
         return new LogicalTableFunctionScan(

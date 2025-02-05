@@ -31,7 +31,7 @@ import org.apache.flink.table.types.logical.RowType;
  * specialization using a subclass of {@link UnnestTableFunctionBase}.
  */
 @Internal
-public class UnnestRowsFunction extends AbstractUnnestRowsFunction {
+public class UnnestRowsFunction extends UnnestRowsFunctionBase {
 
     public UnnestRowsFunction() {
         super();
@@ -77,31 +77,11 @@ public class UnnestRowsFunction extends AbstractUnnestRowsFunction {
         }
 
         public void eval(ArrayData arrayData) {
-
-            if (arrayData == null) {
-                return;
-            }
-            final int size = arrayData.size();
-            for (int pos = 0; pos < size; pos++) {
-                collect(elementGetter.getElementOrNull(arrayData, pos));
-            }
+            evalArrayData(arrayData, elementGetter, (element, position) -> collect(element));
         }
 
-        /* Implementation for multiset */
         public void eval(MapData mapData) {
-            if (mapData == null) {
-                return;
-            }
-            final int size = mapData.size();
-            final ArrayData keys = mapData.keyArray();
-            final ArrayData values = mapData.valueArray();
-            for (int pos = 0; pos < size; pos++) {
-                final int multiplier = values.getInt(pos);
-                final Object key = elementGetter.getElementOrNull(keys, pos);
-                for (int i = 0; i < multiplier; i++) {
-                    collect(key);
-                }
-            }
+            evalMultisetData(mapData, elementGetter, (element, position) -> collect(element));
         }
     }
 
@@ -124,17 +104,8 @@ public class UnnestRowsFunction extends AbstractUnnestRowsFunction {
         }
 
         public void eval(MapData mapData) {
-            if (mapData == null) {
-                return;
-            }
-            final int size = mapData.size();
-            final ArrayData keyArray = mapData.keyArray();
-            final ArrayData valueArray = mapData.valueArray();
-            for (int i = 0; i < size; i++) {
-                collect(GenericRowData.of(
-                        keyGetter.getElementOrNull(keyArray, i),
-                        valueGetter.getElementOrNull(valueArray, i)));
-            }
+            evalMapData(mapData, keyGetter, valueGetter, 
+                (key, value, position) -> collect(GenericRowData.of(key, value)));
         }
     }
 } 

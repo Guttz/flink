@@ -21,6 +21,7 @@ package org.apache.flink.table.runtime.functions.table;
 import org.apache.flink.annotation.Internal;
 import org.apache.flink.table.api.DataTypes;
 import org.apache.flink.table.data.ArrayData;
+import org.apache.flink.table.data.MapData;
 import org.apache.flink.table.functions.BuiltInFunctionDefinitions;
 import org.apache.flink.table.functions.UserDefinedFunction;
 import org.apache.flink.table.runtime.functions.BuiltInSpecializedFunction;
@@ -35,9 +36,9 @@ import org.apache.flink.table.types.logical.RowType;
  * Base class for flattening ARRAY, MAP, and MULTISET using a table function.
  */
 @Internal
-public abstract class AbstractUnnestRowsFunction extends BuiltInSpecializedFunction {
+public abstract class UnnestRowsFunctionBase extends BuiltInSpecializedFunction {
 
-    public AbstractUnnestRowsFunction() {
+    public UnnestRowsFunctionBase() {
         super(BuiltInFunctionDefinitions.INTERNAL_UNNEST_ROWS);
     }
 
@@ -139,6 +140,58 @@ public abstract class AbstractUnnestRowsFunction extends BuiltInSpecializedFunct
         @Override
         public DataType getOutputDataType() {
             return outputDataType;
+        }
+
+        protected void evalArrayData(ArrayData arrayData, ArrayData.ElementGetter elementGetter, UnnestCollector collector) {
+            if (arrayData == null) {
+                return;
+            }
+            final int size = arrayData.size();
+            for (int pos = 0; pos < size; pos++) {
+                collector.collect(elementGetter.getElementOrNull(arrayData, pos), pos + 1);
+            }
+        }
+
+        protected void evalMapData(MapData mapData, ArrayData.ElementGetter keyGetter, ArrayData.ElementGetter valueGetter, MapUnnestCollector collector) {
+            if (mapData == null) {
+                return;
+            }
+            final int size = mapData.size();
+            final ArrayData keyArray = mapData.keyArray();
+            final ArrayData valueArray = mapData.valueArray();
+            for (int i = 0; i < size; i++) {
+                collector.collect(
+                    keyGetter.getElementOrNull(keyArray, i),
+                    valueGetter.getElementOrNull(valueArray, i),
+                    i + 1);
+            }
+        }
+
+        protected void evalMultisetData(MapData mapData, ArrayData.ElementGetter elementGetter, UnnestCollector collector) {
+            if (mapData == null) {
+                return;
+            }
+            final int size = mapData.size();
+            final ArrayData keys = mapData.keyArray();
+            final ArrayData values = mapData.valueArray();
+            int ordinal = 1;
+            for (int pos = 0; pos < size; pos++) {
+                final int multiplier = values.getInt(pos);
+                final Object key = elementGetter.getElementOrNull(keys, pos);
+                for (int i = 0; i < multiplier; i++) {
+                    collector.collect(key, ordinal++);
+                }
+            }
+        }
+
+        @FunctionalInterface
+        protected interface UnnestCollector {
+            void collect(Object element, int position);
+        }
+
+        @FunctionalInterface
+        protected interface MapUnnestCollector {
+            void collect(Object key, Object value, int position);
         }
     }
 }

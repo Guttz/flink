@@ -22,7 +22,7 @@ import org.apache.flink.table.functions.BuiltInFunctionDefinitions;
 import org.apache.flink.table.planner.calcite.FlinkTypeFactory;
 import org.apache.flink.table.planner.functions.bridging.BridgingSqlFunction;
 import org.apache.flink.table.planner.utils.ShortcutUtils;
-import org.apache.flink.table.runtime.functions.table.AbstractUnnestRowsFunction;
+import org.apache.flink.table.runtime.functions.table.UnnestRowsFunctionBase;
 import org.apache.flink.table.types.logical.LogicalType;
 
 import org.apache.flink.shaded.guava32.com.google.common.collect.ImmutableList;
@@ -139,7 +139,7 @@ public class LogicalUnnestRule extends RelRule<LogicalUnnestRule.LogicalUnnestRu
                             .makeCall(
                                     typeFactory.createFieldTypeFromLogicalType(
                                             toRowType(
-                                                    AbstractUnnestRowsFunction.getUnnestedType(
+                                                    UnnestRowsFunctionBase.getUnnestedType(
                                                             logicalType,
                                                             uncollect.withOrdinality))),
                                     sqlFunction,
